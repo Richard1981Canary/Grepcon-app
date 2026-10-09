@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tetris GREPCON HSE</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: safety-signage cabinet — hazard-striped board in the centre, side panels read like a site permit board. Single dark theme by choice. */
+:root {
+  --bg: #121417;
+  --panel: #1b1f24;
+  --line: #2c323a;
+  --fg: #eef0f2;
+  --muted: #8d96a1;
+  --hazard: #ffc400;
+  --hazard-ink: #121417;
+  --danger: #e5322d;
+  --ok: #1fa35a;
+  --display: "Saira Condensed", "Arial Narrow", Impact, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  padding-inline: 16px;
+  padding-block: 12px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  -webkit-user-select: none; user-select: none;
+  touch-action: manipulation;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo img { height: 44px; width: auto; }
+.wordmark { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; letter-spacing: .02em; }
+.wordmark .hse {
+  display: inline-block; margin-left: 6px; padding: 2px 8px 0;
+  background: var(--hazard); color: var(--hazard-ink); border-radius: 3px;
+}
+.tag { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.stripe {
+  height: 8px; border-radius: 2px;
+  background: repeating-linear-gradient(-45deg, var(--hazard) 0 12px, var(--hazard-ink) 12px 24px);
+}
+.game { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px; align-items: start; }
+.side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+.label { font-size: 11px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; }
+.value { font-family: var(--display); font-weight: 800; font-size: 30px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.board-frame {
+  padding: 8px; border-radius: 6px; position: relative;
+  background: repeating-linear-gradient(-45deg, var(--hazard) 0 14px, var(--hazard-ink) 14px 28px);
+}
+canvas#board { display: block; background: var(--bg); width: min(300px, 62vw); aspect-ratio: 1 / 2; max-width: 100%; }
+canvas#next { display: block; width: 100%; max-width: 140px; aspect-ratio: 1; margin-top: 6px; }
+.overlay {
+  position: absolute; inset: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; text-align: center; background: color-mix(in srgb, var(--bg) 88%, transparent); padding: 16px;
+}
+.overlay h2 { font-family: var(--display); font-weight: 800; font-size: 34px; margin: 0; line-height: 1; text-wrap: balance; }
+.overlay p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+button {
+  font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: .06em;
+  background: var(--hazard); color: var(--hazard-ink); border: 0; border-radius: 4px;
+  padding: 10px 22px; cursor: pointer;
+}
+button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.tip { font-size: 13px; line-height: 1.5; min-height: 3em; }
+.tip strong { color: var(--hazard); }
+.keys { font-size: 12px; line-height: 1.8; color: var(--muted); }
+.keys kbd { font-family: var(--mono); color: var(--fg); background: var(--line); border-radius: 3px; padding: 0 5px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.legend span {
+  font-family: var(--display); font-weight: 800; font-size: 18px; width: 28px; height: 28px;
+  display: grid; place-items: center; border-radius: 3px; color: var(--hazard-ink);
+}
+.touch { display: none; grid-column: 1 / -1; gap: 8px; grid-template-columns: repeat(5, 1fr); }
+.touch button { padding: 14px 0; font-size: 22px; }
+.flash { animation: flash .6s ease-out; }
+@keyframes flash { from { background: var(--hazard); color: var(--hazard-ink); } }
+@media (max-width: 720px) {
+  .game { grid-template-columns: 1fr; justify-items: center; }
+  .side { width: 100%; max-width: 420px; }
+  .side.left { order: 2; } .board-frame { order: 1; } .side.right { order: 3; }
+  .touch { display: grid; width: 100%; max-width: 420px; }
+  .keys { display: none; }
+}
+@media (pointer: coarse) { .touch { display: grid; } }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <img src="logo.png" alt="Logo GREPCON" onerror="this.remove()">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true" id="hatIcon">
+        <rect width="44" height="44" rx="6" fill="#ffc400"/>
+        <path d="M8 30h28v4H8z" fill="#121417"/>
+        <path d="M11 30c0-8 5-14 11-14s11 6 11 14z" fill="#121417"/>
+        <path d="M20 12h4v8h-4z" fill="#121417"/>
+      </svg>
+      <div>
+        <div class="wordmark">GREPCON<span class="hse">HSE</span></div>
+        <div class="tag">Tetris de seguridad · Salud · Seguridad · Medio Ambiente</div>
+      </div>
+    </div>
+  </header>
+  <div class="stripe"></div>
+
+  <div class="game">
+    <div class="side left">
+      <div class="stats card">
+        <div><div class="label">Puntos</div><div class="value" id="score">0</div></div>
+        <div><div class="label">Récord</div><div class="value" id="best">0</div></div>
+        <div><div class="label">Líneas</div><div class="value" id="lines">0</div></div>
+        <div><div class="label">Nivel</div><div class="value" id="level">1</div></div>
+      </div>
+      <div class="card">
+        <div class="label">Días sin accidentes</div>
+        <div class="value" id="days">0</div>
+        <div class="label" style="margin-top:4px">+1 por cada línea limpia</div>
+      </div>
+      <div class="card tip" id="tip"><strong>Consejo HSE:</strong> usa siempre tu casco en obra.</div>
+    </div>
+
+    <div class="board-frame">
+      <canvas id="board" width="300" height="600" aria-label="Tablero de juego"></canvas>
+      <div class="overlay" id="overlay">
+        <h2 id="ovTitle">GREPCON HSE</h2>
+        <p id="ovText">Apila las letras G·R·E·P·C·O·N.<br>Completa líneas para sumar días sin accidentes.<br>Limpia 4 a la vez para un <strong style="color:var(--hazard)">¡HSE PERFECTO!</strong></p>
+        <button id="startBtn" type="button">EMPEZAR</button>
+      </div>
+    </div>
+
+    <div class="side right">
+      <div class="card">
+        <div class="label">Siguiente</div>
+        <canvas id="next" width="140" height="140"></canvas>
+      </div>
+      <div class="card">
+        <div class="label">Piezas GREPCON</div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="card keys">
+        <kbd>←</kbd> <kbd>→</kbd> mover<br>
+        <kbd>↑</kbd> / <kbd>X</kbd> girar · <kbd>Z</kbd> girar ←<br>
+        <kbd>↓</kbd> bajar · <kbd>Espacio</kbd> caída<br>
+        <kbd>P</kbd> pausa
+      </div>
+    </div>
+
+    <div class="touch" id="touch">
+      <button type="button" data-a="left" aria-label="Izquierda">◀</button>
+      <button type="button" data-a="rot" aria-label="Girar">⟳</button>
+      <button type="button" data-a="right" aria-label="Derecha">▶</button>
+      <button type="button" data-a="down" aria-label="Bajar">▼</button>
+      <button type="button" data-a="drop" aria-label="Caída">⤓</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const COLS = 10, ROWS = 20, S = 30;
+  const board = document.getElementById('board'), ctx = board.getContext('2d');
+  const nextC = document.getElementById('next'), nctx = nextC.getContext('2d');
+
+  // Each tetromino carries one letter of GREPCON, coloured like safety signage.
+  const PIECES = {
+    G: { c: '#ffc400', s: [[1,1,1,1]] },             // I
+    R: { c: '#e5322d', s: [[1,1],[1,1]] },           // O
+    E: { c: '#1fa35a', s: [[0,1,0],[1,1,1]] },       // T
+    P: { c: '#1f6fd1', s: [[0,1,1],[1,1,0]] },       // S
+    C: { c: '#ff7a1a', s: [[1,1,0],[0,1,1]] },       // Z
+    O: { c: '#eef0f2', s: [[1,0,0],[1,1,1]] },       // J
+    N: { c: '#9b5de5', s: [[0,0,1],[1,1,1]] },       // L
+  };
+  const KEYS = Object.keys(PIECES);
+
+  const TIPS = [
+    'Usa siempre tu <strong>casco</strong> en obra.',
+    'Revisa tu <strong>EPP</strong> antes de empezar el turno.',
+    'Trabajo en altura: <strong>arnés</strong> y línea de vida siempre.',
+    'Mantén el área de trabajo <strong>ordenada y limpia</strong>.',
+    'Reporta todo <strong>acto o condición insegura</strong>.',
+    'Separa los <strong>residuos</strong>: cuidamos el medio ambiente.',
+    'Hidrátate y respeta las <strong>pausas activas</strong>.',
+    'Bloqueo y etiquetado (<strong>LOTO</strong>) antes de intervenir equipos.',
+    'Conoce tu <strong>ruta de evacuación</strong> y punto de reunión.',
+    'Si no es seguro, <strong>detén el trabajo</strong>.',
+  ];
+
+  const legend = document.getElementById('legend');
+  KEYS.forEach(k => { const s = document.createElement('span'); s.textContent = k; s.style.background = PIECES[k].c; legend.appendChild(s); });
+
+  let grid, cur, nextKey, bag, score, lines, level, days, dropMs, acc, last, state = 'idle', best = 0;
+  try { best = +localStorage.getItem('grepcon-tetris-best') || 0; } catch (e) {}
+  const $ = id => document.getElementById(id);
+  $('best').textContent = best;
+
+  function newBag() { const b = KEYS.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [b[i], b[j]] = [b[j], b[i]]; } return b; }
+  function take() { if (!bag.length) bag = newBag(); return bag.pop(); }
+  function spawn() {
+    const k = nextKey; nextKey = take();
+    const s = PIECES[k].s.map(r => r.slice());
+    cur = { k, s, x: (COLS - s[0].length) >> 1, y: 0 };
+    if (collide(cur.s, cur.x, cur.y)) gameOver();
+    drawNext();
+  }
+  function collide(s, x, y) {
+    for (let r = 0; r < s.length; r++) for (let c = 0; c < s[r].length; c++) {
+      if (!s[r][c]) continue;
+      const nx = x + c, ny = y + r;
+      if (nx < 0 || nx >= COLS || ny >= ROWS) return true;
+      if (ny >= 0 && grid[ny][nx]) return true;
+    }
+    return false;
+  }
+  function rotate(dir) {
+    const s = cur.s, h = s.length, w = s[0].length;
+    const n = Array.from({ length: w }, (_, r) => Array.from({ length: h }, (_, c) => dir > 0 ? s[h - 1 - c][r] : s[c][w - 1 - r]));
+    for (const dx of [0, -1, 1, -2, 2]) if (!collide(n, cur.x + dx, cur.y)) { cur.s = n; cur.x += dx; return; }
+  }
+  function move(dx) { if (!collide(cur.s, cur.x + dx, cur.y)) cur.x += dx; }
+  function soft() { if (!collide(cur.s, cur.x, cur.y + 1)) { cur.y++; score += 1; } else lock(); acc = 0; }
+  function hard() { let n = 0; while (!collide(cur.s, cur.x, cur.y + 1)) { cur.y++; n++; } score += n * 2; lock(); acc = 0; }
+
+  function lock() {
+    cur.s.forEach((row, r) => row.forEach((v, c) => { if (v && cur.y + r >= 0) grid[cur.y + r][cur.x + c] = cur.k; }));
+    let cleared = 0;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r].every(Boolean)) { grid.splice(r, 1); grid.unshift(Array(COLS).fill(null)); cleared++; r++; }
+    }
+    if (cleared) {
+      score += [0, 100, 300, 500, 800][cleared] * level;
+      lines += cleared; days += cleared;
+      level = 1 + Math.floor(lines / 10);
+      dropMs = Math.max(80, 800 - (level - 1) * 70);
+      showTip(cleared === 4);
+    }
+    updateHud();
+    if (state === 'play') spawn();
+  }
+
+  function showTip(perfect) {
+    const t = $('tip');
+    t.innerHTML = perfect
+      ? '<strong>¡HSE PERFECTO!</strong> 4 líneas de una vez. Cero incidentes, máxima productividad.'
+      : '<strong>Consejo HSE:</strong> ' + TIPS[Math.random() * TIPS.length | 0];
+    t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
+  }
+
+  function updateHud() {
+    $('score').textContent = score; $('lines').textContent = lines;
+    $('level').textContent = level; $('days').textContent = days;
+    if (score > best) { best = score; $('best').textContent = best; try { localStorage.setItem('grepcon-tetris-best', best); } catch (e) {} }
+  }
+
+  function cell(c, x, y, size, k, ghost) {
+    const col = PIECES[k].c;
+    if (ghost) { c.strokeStyle = col; c.globalAlpha = .35; c.lineWidth = 2; c.strokeRect(x + 2, y + 2, size - 4, size - 4); c.globalAlpha = 1; return; }
+    c.fillStyle = col; c.fillRect(x + 1, y + 1, size - 2, size - 2);
+    c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(x + 1, y + 1, size - 2, 4);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(x + 1, y + size - 5, size - 2, 4);
+    c.fillStyle = (k === 'P' || k === 'N' || k === 'R') ? '#ffffff' : '#121417';
+    c.font = `800 ${size * .62}px "Saira Condensed", Impact, sans-serif`;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(k, x + size / 2, y + size / 2 + 1);
+  }
+
+  function draw() {
+    ctx.fillStyle = '#121417'; ctx.fillRect(0, 0, board.width, board.height);
+    // faint watermark of the brand behind the stack
+    ctx.save(); ctx.globalAlpha = .06; ctx.fillStyle = '#ffc400';
+    ctx.font = '800 64px "Saira Condensed", Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.translate(board.width / 2, board.height / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillText('GREPCON HSE', 0, 0); ctx.restore();
+    ctx.strokeStyle = '#1e2329'; ctx.lineWidth = 1;
+    for (let x = 1; x < COLS; x++) { ctx.beginPath(); ctx.moveTo(x * S + .5, 0); ctx.lineTo(x * S + .5, ROWS * S); ctx.stroke(); }
+    for (let y = 1; y < ROWS; y++) { ctx.beginPath(); ctx.moveTo(0, y * S + .5); ctx.lineTo(COLS * S, y * S + .5); ctx.stroke(); }
+    grid.forEach((row, r) => row.forEach((k, c) => { if (k) cell(ctx, c * S, r * S, S, k); }));
+    if (cur && state !== 'over') {
+      let gy = cur.y; while (!collide(cur.s, cur.x, gy + 1)) gy++;
+      cur.s.forEach((row, r) => row.forEach((v, c) => { if (v) cell(ctx, (cur.x + c) * S, (gy + r) * S, S, cur.k, true); }));
+      cur.s.forEach((row, r) => row.forEach((v, c) => { if (v && cur.y + r >= 0) cell(ctx, (cur.x + c) * S, (cur.y + r) * S, S, cur.k); }));
+    }
+  }
+
+  function drawNext() {
+    nctx.clearRect(0, 0, nextC.width, nextC.height);
+    const s = PIECES[nextKey].s, sz = 28;
+    const ox = (nextC.width - s[0].length * sz) / 2, oy = (nextC.height - s.length * sz) / 2;
+    s.forEach((row, r) => row.forEach((v, c) => { if (v) cell(nctx, ox + c * sz, oy + r * sz, sz, nextKey); }));
+  }
+
+  function loop(t) {
+    if (state !== 'play') return;
+    acc += t - last; last = t;
+    if (acc >= dropMs) { acc = 0; if (!collide(cur.s, cur.x, cur.y + 1)) cur.y++; else lock(); }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function start() {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    bag = newBag(); nextKey = take();
+    score = 0; lines = 0; level = 1; days = 0; dropMs = 800; acc = 0;
+    state = 'play'; $('overlay').hidden = true;
+    updateHud(); spawn(); last = performance.now(); requestAnimationFrame(loop);
+  }
+  function pause() {
+    if (state === 'play') { state = 'pause'; overlay('PAUSA', 'Respira. Pausa activa de 10 segundos.', 'CONTINUAR'); }
+    else if (state === 'pause') { state = 'play'; $('overlay').hidden = true; last = performance.now(); requestAnimationFrame(loop); }
+  }
+  function gameOver() {
+    state = 'over'; draw();
+    overlay('FIN DEL TURNO', `Puntos: ${score} · Líneas: ${lines}<br>${days} días sin accidentes. ¡Buen trabajo, equipo GREPCON!`, 'JUGAR OTRA VEZ');
+  }
+  function overlay(t, p, b) { $('ovTitle').textContent = t; $('ovText').innerHTML = p; $('startBtn').textContent = b; $('overlay').hidden = false; $('startBtn').focus(); }
+
+  $('startBtn').addEventListener('click', () => state === 'pause' ? pause() : start());
+
+  function act(a) {
+    if (state !== 'play') return;
+    if (a === 'left') move(-1); else if (a === 'right') move(1);
+    else if (a === 'rot') rotate(1); else if (a === 'rotl') rotate(-1);
+    else if (a === 'down') soft(); else if (a === 'drop') hard();
+    updateHud(); draw();
+  }
+  const map = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'rot', x: 'rot', X: 'rot', z: 'rotl', Z: 'rotl', ArrowDown: 'down', ' ': 'drop' };
+  document.addEventListener('keydown', e => {
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') { pause(); e.preventDefault(); return; }
+    if (map[e.key] && state === 'play') { act(map[e.key]); e.preventDefault(); }
+  });
+  document.querySelectorAll('#touch button').forEach(b => {
+    let rep;
+    const go = e => { e.preventDefault(); act(b.dataset.a); if (b.dataset.a !== 'rot' && b.dataset.a !== 'drop') rep = setInterval(() => act(b.dataset.a), 110); };
+    const stop = () => clearInterval(rep);
+    b.addEventListener('pointerdown', go); b.addEventListener('pointerup', stop); b.addEventListener('pointerleave', stop); b.addEventListener('pointercancel', stop);
+  });
+
+  // Idle preview: a sample stack so the first frame shows the game.
+  grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  const demo = ['GGGGRRE.PP', 'CCOOORREPN', 'NCC.OEEEPN'];
+  demo.forEach((row, i) => [...row].forEach((k, c) => { if (k !== '.') grid[ROWS - 3 + i][c] = k; }));
+  nextKey = 'E'; drawNext();
+  document.fonts && document.fonts.ready.then(() => { draw(); drawNext(); });
+  draw();
+})();
+</script>
+</body>
+</html>
