@@ -14,4 +14,4 @@ Abre `index.html` en el navegador (no necesita instalación).
 
 ## Logo
 
-Coloca el logo oficial como `logo.png` junto a `index.html` y aparecerá en la cabecera.
+El logo está recreado en SVG dentro de `index.html`; la imagen original está en `logo-original.jpg`.

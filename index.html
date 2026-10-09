@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tetris GREPCON HSE</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: safety-signage cabinet — hazard-striped board in the centre, side panels read like a site permit board. Single dark theme by choice. */
 :root {
@@ -13,11 +13,12 @@
   --line: #2c323a;
   --fg: #eef0f2;
   --muted: #8d96a1;
-  --hazard: #ffc400;
+  --hazard: #f5c54e;
   --hazard-ink: #121417;
   --danger: #e5322d;
   --ok: #1fa35a;
   --display: "Saira Condensed", "Arial Narrow", Impact, sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   color-scheme: dark;
 }
@@ -34,15 +35,15 @@ body {
   touch-action: manipulation;
 }
 .wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.logo { display: flex; align-items: center; gap: 10px; }
-.logo img { height: 44px; width: auto; }
-.wordmark { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; letter-spacing: .02em; }
-.wordmark .hse {
-  display: inline-block; margin-left: 6px; padding: 2px 8px 0;
-  background: var(--hazard); color: var(--hazard-ink); border-radius: 3px;
+header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap;
+  background: var(--hazard); color: var(--hazard-ink); border-radius: 6px; padding: 14px 20px;
 }
-.tag { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.logo { display: flex; align-items: center; gap: 18px; }
+.logo svg { height: 64px; width: auto; flex: none; }
+.wordmark { font-family: var(--serif); font-weight: 600; font-size: 44px; line-height: 1; }
+.sub { font-family: var(--serif); font-weight: 500; font-size: 18px; margin-top: 6px; }
+.tag { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; }
 .stripe {
   height: 8px; border-radius: 2px;
   background: repeating-linear-gradient(-45deg, var(--hazard) 0 12px, var(--hazard-ink) 12px 24px);
@@ -100,18 +101,17 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 <div class="wrap">
   <header>
     <div class="logo">
-      <img src="logo.png" alt="Logo GREPCON" onerror="this.remove()">
-      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true" id="hatIcon">
-        <rect width="44" height="44" rx="6" fill="#ffc400"/>
-        <path d="M8 30h28v4H8z" fill="#121417"/>
-        <path d="M11 30c0-8 5-14 11-14s11 6 11 14z" fill="#121417"/>
-        <path d="M20 12h4v8h-4z" fill="#121417"/>
+      <svg viewBox="-6 -6 218 368" role="img" aria-label="Logo Grepcon">
+        <g fill="none" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M103 0 206 60 103 118 0 60Z M103 0V118 M0 60V296 M103 118 0 176 103 236 206 176V296L103 356 0 296 103 236 206 296 M103 236V356"/>
+        </g>
       </svg>
       <div>
-        <div class="wordmark">GREPCON<span class="hse">HSE</span></div>
-        <div class="tag">Tetris de seguridad · Salud · Seguridad · Medio Ambiente</div>
+        <div class="wordmark">Grepcon</div>
+        <div class="sub">HSE &amp; Services</div>
       </div>
     </div>
+    <div class="tag">Tetris de seguridad</div>
   </header>
   <div class="stripe"></div>
 
@@ -175,7 +175,7 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 
   // Each tetromino carries one letter of GREPCON, coloured like safety signage.
   const PIECES = {
-    G: { c: '#ffc400', s: [[1,1,1,1]] },             // I
+    G: { c: '#f5c54e', s: [[1,1,1,1]] },             // I
     R: { c: '#e5322d', s: [[1,1],[1,1]] },           // O
     E: { c: '#1fa35a', s: [[0,1,0],[1,1,1]] },       // T
     P: { c: '#1f6fd1', s: [[0,1,1],[1,1,0]] },       // S
@@ -279,7 +279,7 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
   function draw() {
     ctx.fillStyle = '#121417'; ctx.fillRect(0, 0, board.width, board.height);
     // faint watermark of the brand behind the stack
-    ctx.save(); ctx.globalAlpha = .06; ctx.fillStyle = '#ffc400';
+    ctx.save(); ctx.globalAlpha = .07; ctx.fillStyle = '#f5c54e';
     ctx.font = '800 64px "Saira Condensed", Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.translate(board.width / 2, board.height / 2); ctx.rotate(-Math.PI / 2);
     ctx.fillText('GREPCON HSE', 0, 0); ctx.restore();
