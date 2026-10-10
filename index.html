@@ -538,6 +538,8 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
     b.addEventListener('contextmenu', e => e.preventDefault());
   });
 
+  window.gameInProgress = () => state === 'play' || state === 'pause';
+
   // Idle preview: a sample stack so the first frame shows the game.
   grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
   const demo = ['GGGGRRE.PP', 'CCOOORREPN', 'NCC.OEEEPN'];
@@ -549,7 +551,20 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
 </script>
 <script>
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    // Busca versión nueva cada vez que se vuelve a la app.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+  // Cuando se instala una versión nueva, recarga una vez para mostrarla sin tener que reabrir.
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;
+    // No cortar una partida: la versión nueva se verá al volver a abrir la app.
+    if (window.gameInProgress && window.gameInProgress()) return;
+    reloaded = true;
+    location.reload();
+  });
 }
 </script>
 </body>
