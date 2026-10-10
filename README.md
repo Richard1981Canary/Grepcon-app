@@ -12,6 +12,8 @@ Abre `index.html` en el navegador (no necesita instalación).
 - `↓` bajar · `Espacio` caída rápida · `P` pausa
 - `M` activa o silencia la música.
 - En móvil y tablet aparece un mando: botones GIRAR y CAÍDA a la izquierda y cruceta a la derecha.
+- El botón de ajustes (⚙) permite silenciar la música, mostrar u ocultar los controles táctiles
+  y consultar las piezas y las teclas.
 
 ## Música
 
