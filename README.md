@@ -10,7 +10,15 @@ Abre `index.html` en el navegador (no necesita instalación).
 
 - `←` `→` mover · `↑` / `X` girar · `Z` girar al revés
 - `↓` bajar · `Espacio` caída rápida · `P` pausa
-- En móvil aparecen botones táctiles.
+- `M` activa o silencia la música.
+- En móvil y tablet aparece un mando: botones GIRAR y CAÍDA a la izquierda y cruceta a la derecha.
+
+## Música
+
+Música chiptune generada en directo (Korobeiniki, melodía popular de dominio público).
+Se acelera con cada nivel, suma percusión a partir de los niveles 2 y 4, y se vuelve más
+rápida y tensa cuando la pila se acerca al techo. Incluye efectos de sonido para mover,
+girar, colocar, completar líneas y el ¡HSE PERFECTO!.
 
 ## Logo
 

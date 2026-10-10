@@ -91,22 +91,61 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
   font-family: var(--display); font-weight: 800; font-size: 18px; width: 28px; height: 28px;
   display: grid; place-items: center; border-radius: 3px; color: var(--hazard-ink);
 }
-.touch { display: none; grid-column: 1 / -1; gap: 8px; grid-template-columns: repeat(5, 1fr); }
-.touch button { padding: 14px 0; font-size: 22px; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.tool {
+  font-family: var(--mono); font-weight: 600; font-size: 13px; letter-spacing: .04em;
+  background: var(--hazard-ink); color: var(--hazard); padding: 8px 12px;
+}
+.tool.off { opacity: .55; text-decoration: line-through; }
+.mini { display: none; gap: 16px; font-size: 12px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.mini b { font-family: var(--display); font-size: 20px; color: var(--fg); letter-spacing: 0; margin-left: 4px; font-variant-numeric: tabular-nums; }
+/* Gamepad: action buttons under the left thumb, d-pad under the right thumb. */
+.touch { display: none; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: 16px; }
+.touch button { touch-action: none; -webkit-tap-highlight-color: transparent; }
+.touch button:active, .touch button.on { filter: brightness(.82); transform: translateY(1px); }
+.actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.round {
+  width: 84px; height: 84px; border-radius: 50%; padding: 0;
+  display: grid; place-items: center; font-size: 15px; line-height: 1.05;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--hazard) 55%, var(--hazard-ink));
+}
+.round.big { width: 96px; height: 96px; font-size: 17px; }
+.round span { display: block; font-size: 28px; }
+.dpad { display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(3, 64px); }
+.dpad button { padding: 0; font-size: 26px; border-radius: 0; }
+.dpad .up { grid-area: 1 / 2; border-radius: 12px 12px 0 0; }
+.dpad .l { grid-area: 2 / 1; border-radius: 12px 0 0 12px; }
+.dpad .hub { grid-area: 2 / 2; background: var(--hazard); display: grid; place-items: center; }
+.dpad .hub::after { content: ""; width: 18px; height: 18px; border-radius: 50%; background: color-mix(in srgb, var(--hazard) 70%, var(--hazard-ink)); }
+.dpad .r { grid-area: 2 / 3; border-radius: 0 12px 12px 0; }
+.dpad .dn { grid-area: 3 / 2; border-radius: 0 0 12px 12px; }
 .flash { animation: flash .6s ease-out; }
 @keyframes flash { from { background: var(--hazard); color: var(--hazard-ink); } }
 @media (max-width: 720px) {
   .game { grid-template-columns: 1fr; justify-items: center; }
   .side { width: 100%; max-width: 420px; }
-  .board-frame { order: 1; } .touch { order: 2; } .side.left { order: 3; } .side.right { order: 4; }
-  .touch { display: grid; width: 100%; max-width: 420px; }
+  .mini { order: 0; display: flex; } .board-frame { order: 1; } .touch { order: 2; } .side.left { order: 3; } .side.right { order: 4; }
+  .touch { display: flex; width: 100%; max-width: 420px; }
+  .stripe { display: none; }
+  header { flex-wrap: nowrap; padding: 8px 12px; }
+  .logo { gap: 10px; min-width: 0; }
+  .logo svg { height: 40px; }
+  .wordmark { font-size: 28px; }
+  .sub { font-size: 13px; }
+  .tool { font-size: 18px; padding: 8px 12px; }
+  .tool .tl { display: none; }
+  .wrap { gap: 10px; }
+  canvas#board { width: clamp(140px, calc((100dvh - 380px) / 2), min(300px, 62vw)); }
+  .dpad { grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(3, 58px); }
+  .round { width: 76px; height: 76px; } .round.big { width: 88px; height: 88px; }
+  .actions { gap: 8px; }
   header { padding: 10px 14px; }
   .logo svg { height: 48px; }
   .wordmark { font-size: 34px; }
   .sub { font-size: 15px; margin-top: 2px; }
   .keys { display: none; }
 }
-@media (pointer: coarse) { .touch { display: grid; } }
+@media (pointer: coarse) { .touch { display: flex; } }
 @media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
 </style>
 </head>
@@ -125,7 +164,10 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
         <div class="sub">HSE &amp; Services</div>
       </div>
     </div>
-    <div class="tag">Tetris de seguridad</div>
+    <div class="tools">
+      <button class="tool" id="soundBtn" type="button" aria-pressed="true">♪ Música: Sí</button>
+      <button class="tool" id="pauseBtn" type="button" aria-label="Pausa">❚❚<span class="tl"> Pausa</span></button>
+    </div>
   </header>
   <div class="stripe"></div>
 
@@ -143,6 +185,10 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
         <div class="label" style="margin-top:4px">+1 por cada línea limpia</div>
       </div>
       <div class="card tip" id="tip"><strong>Consejo HSE:</strong> usa siempre tu casco en obra.</div>
+    </div>
+
+    <div class="mini" aria-hidden="true">
+      <span>Puntos<b id="mScore">0</b></span><span>Nivel<b id="mLevel">1</b></span><span>Líneas<b id="mLines">0</b></span>
     </div>
 
     <div class="board-frame">
@@ -167,16 +213,22 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
         <kbd>←</kbd> <kbd>→</kbd> mover<br>
         <kbd>↑</kbd> / <kbd>X</kbd> girar · <kbd>Z</kbd> girar ←<br>
         <kbd>↓</kbd> bajar · <kbd>Espacio</kbd> caída<br>
-        <kbd>P</kbd> pausa
+        <kbd>P</kbd> pausa · <kbd>M</kbd> música
       </div>
     </div>
 
     <div class="touch" id="touch">
-      <button type="button" data-a="left" aria-label="Izquierda">◀</button>
-      <button type="button" data-a="rot" aria-label="Girar">⟳</button>
-      <button type="button" data-a="right" aria-label="Derecha">▶</button>
-      <button type="button" data-a="down" aria-label="Bajar">▼</button>
-      <button type="button" data-a="drop" aria-label="Caída">⤓</button>
+      <div class="actions">
+        <button class="round big" type="button" data-a="rot" aria-label="Girar"><span>⟳</span>GIRAR</button>
+        <button class="round" type="button" data-a="drop" aria-label="Caída rápida"><span>⤓</span>CAÍDA</button>
+      </div>
+      <div class="dpad">
+        <button class="up" type="button" data-a="rot" aria-label="Girar">▲</button>
+        <button class="l" type="button" data-a="left" aria-label="Izquierda">◀</button>
+        <span class="hub"></span>
+        <button class="r" type="button" data-a="right" aria-label="Derecha">▶</button>
+        <button class="dn" type="button" data-a="down" aria-label="Bajar">▼</button>
+      </div>
     </div>
   </div>
 </div>
@@ -212,6 +264,111 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
     'Si no es seguro, <strong>detén el trabajo</strong>.',
   ];
 
+  // ---- Sound: chiptune Korobeiniki (public-domain folk tune) synthesised live, so tempo and layers can follow the game.
+  const Sound = (() => {
+    const FREQ = n => {
+      const pc = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[n[0]] + (n[1] === '#' ? 1 : 0);
+      return 440 * Math.pow(2, (pc + (+n[n.length - 1] - 4) * 12 - 9) / 12);
+    };
+    // Melody in eighth notes: [note, length]. Two 4-bar phrases = 64 eighths.
+    const TUNE = [
+      ['E5',2],['B4',1],['C5',1],['D5',2],['C5',1],['B4',1],['A4',2],['A4',1],['C5',1],['E5',2],['D5',1],['C5',1],
+      ['B4',3],['C5',1],['D5',2],['E5',2],['C5',2],['A4',2],['A4',2],['R',2],
+      ['R',1],['D5',2],['F5',1],['A5',2],['G5',1],['F5',1],['E5',3],['C5',1],['E5',2],['D5',1],['C5',1],
+      ['B4',2],['B4',1],['C5',1],['D5',2],['E5',2],['C5',2],['A4',2],['A4',2],['R',2],
+    ];
+    const MEL = Array(64).fill(null);
+    let i = 0; TUNE.forEach(([n, d]) => { if (n !== 'R') MEL[i] = { f: FREQ(n), d }; i += d; });
+    const ROOTS = ['E2', 'A2', 'E2', 'A2', 'D2', 'C2', 'E2', 'A2'].map(FREQ);
+    const BASS = Array.from({ length: 64 }, (_, k) => ROOTS[k >> 3] * (k % 2 ? 2 : 1));
+
+    let ac, master, music, sfxBus, noiseBuf, timer, playing = false, step = 0, nextT = 0;
+    let lvl = 1, danger = false, on = true;
+    try { on = localStorage.getItem('grepcon-sound') !== 'off'; } catch (e) {}
+
+    function ensure() {
+      if (ac) return true;
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return false;
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+      ac = new C();
+      master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination);
+      music = ac.createGain(); music.gain.value = .13; music.connect(master);
+      sfxBus = ac.createGain(); sfxBus.gain.value = .28; sfxBus.connect(master);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * .5, ac.sampleRate);
+      const ch = noiseBuf.getChannelData(0); for (let k = 0; k < ch.length; k++) ch[k] = Math.random() * 2 - 1;
+      return true;
+    }
+    function tone(dest, type, f, t, d, vol, to) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t + d);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .008);
+      g.gain.exponentialRampToValueAtTime(.0001, t + d);
+      o.connect(g); g.connect(dest); o.start(t); o.stop(t + d + .03);
+    }
+    function noise(dest, t, d, vol, hp) {
+      const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = hp;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+      src.connect(f); f.connect(g); g.connect(dest); src.start(t); src.stop(t + d + .03);
+    }
+    function schedule() {
+      // Tempo rises with the level and jumps when the stack nears the top.
+      const bpm = Math.min(200, 124 + (lvl - 1) * 8) * (danger ? 1.18 : 1);
+      const e = 60 / bpm / 2;
+      while (nextT < ac.currentTime + .12) {
+        const k = step % 64, m = MEL[k];
+        if (m) tone(music, danger ? 'sawtooth' : 'square', m.f, nextT, m.d * e * .92, danger ? .32 : .42);
+        if (m && lvl >= 6) tone(music, 'square', m.f / 2, nextT, m.d * e * .9, .14);
+        tone(music, 'triangle', BASS[k], nextT, e * .9, .75);
+        if (lvl >= 2 || danger) noise(music, nextT, .035, k % 2 ? .12 : .26, 7000);
+        if ((lvl >= 4 || danger) && k % 4 === 2) noise(music, nextT, .11, .45, 1400);
+        nextT += e; step++;
+      }
+    }
+    return {
+      get on() { return on; },
+      start() {
+        if (!ensure()) return;
+        if (ac.state !== 'running') ac.resume();
+        if (playing) return;
+        playing = true; step = 0; nextT = ac.currentTime + .06;
+        schedule(); timer = setInterval(schedule, 25);
+      },
+      stop() { playing = false; clearInterval(timer); },
+      set(level, isDanger) { lvl = level; danger = isDanger; },
+      toggle() {
+        on = !on;
+        try { localStorage.setItem('grepcon-sound', on ? 'on' : 'off'); } catch (e) {}
+        if (ac) master.gain.setTargetAtTime(on ? 1 : 0, ac.currentTime, .02);
+        return on;
+      },
+      sfx(name, n) {
+        if (!ac || !on) return;
+        const t = ac.currentTime + .005;
+        if (name === 'move') tone(sfxBus, 'square', 330, t, .035, .12);
+        else if (name === 'rotate') tone(sfxBus, 'square', 520, t, .06, .14, 780);
+        else if (name === 'lock') { tone(sfxBus, 'triangle', 140, t, .09, .6, 90); noise(sfxBus, t, .05, .2, 2500); }
+        else if (name === 'drop') { tone(sfxBus, 'triangle', 220, t, .14, .7, 60); noise(sfxBus, t, .09, .35, 900); }
+        else if (name === 'clear') ['C5', 'E5', 'G5', 'C6'].slice(0, n + 1).forEach((x, j) => tone(sfxBus, 'square', FREQ(x), t + j * .06, .12, .3));
+        else if (name === 'perfect') {
+          ['C5', 'E5', 'G5', 'C6', 'E6', 'G6'].forEach((x, j) => tone(sfxBus, 'square', FREQ(x), t + j * .07, .14, .32));
+          ['C5', 'E5', 'G5'].forEach(x => tone(sfxBus, 'triangle', FREQ(x), t + .45, .7, .35));
+        }
+        else if (name === 'level') tone(sfxBus, 'square', 300, t, .35, .28, 1200);
+        else if (name === 'over') { tone(sfxBus, 'sawtooth', 440, t, .9, .35, 70); noise(sfxBus, t, .4, .25, 400); }
+      },
+    };
+  })();
+
+  function syncSoundBtn() {
+    const b = $('soundBtn');
+    b.innerHTML = '♪<span class="tl"> Música: ' + (Sound.on ? 'Sí' : 'No') + '</span>';
+    b.classList.toggle('off', !Sound.on); b.setAttribute('aria-pressed', Sound.on);
+    b.setAttribute('aria-label', Sound.on ? 'Silenciar música' : 'Activar música');
+  }
+
   const legend = document.getElementById('legend');
   KEYS.forEach(k => { const s = document.createElement('span'); s.textContent = k; s.style.background = PIECES[k].c; legend.appendChild(s); });
 
@@ -241,25 +398,30 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
   function rotate(dir) {
     const s = cur.s, h = s.length, w = s[0].length;
     const n = Array.from({ length: w }, (_, r) => Array.from({ length: h }, (_, c) => dir > 0 ? s[h - 1 - c][r] : s[c][w - 1 - r]));
-    for (const dx of [0, -1, 1, -2, 2]) if (!collide(n, cur.x + dx, cur.y)) { cur.s = n; cur.x += dx; return; }
+    for (const dx of [0, -1, 1, -2, 2]) if (!collide(n, cur.x + dx, cur.y)) { cur.s = n; cur.x += dx; Sound.sfx('rotate'); return; }
   }
-  function move(dx) { if (!collide(cur.s, cur.x + dx, cur.y)) cur.x += dx; }
+  function move(dx) { if (!collide(cur.s, cur.x + dx, cur.y)) { cur.x += dx; Sound.sfx('move'); } }
   function soft() { if (!collide(cur.s, cur.x, cur.y + 1)) { cur.y++; score += 1; } else lock(); acc = 0; }
-  function hard() { let n = 0; while (!collide(cur.s, cur.x, cur.y + 1)) { cur.y++; n++; } score += n * 2; lock(); acc = 0; }
+  function hard() { let n = 0; while (!collide(cur.s, cur.x, cur.y + 1)) { cur.y++; n++; } score += n * 2; Sound.sfx('drop'); lock(true); acc = 0; }
 
-  function lock() {
+  function lock(dropped) {
     cur.s.forEach((row, r) => row.forEach((v, c) => { if (v && cur.y + r >= 0) grid[cur.y + r][cur.x + c] = cur.k; }));
     let cleared = 0;
     for (let r = ROWS - 1; r >= 0; r--) {
       if (grid[r].every(Boolean)) { grid.splice(r, 1); grid.unshift(Array(COLS).fill(null)); cleared++; r++; }
     }
     if (cleared) {
+      const before = level;
       score += [0, 100, 300, 500, 800][cleared] * level;
       lines += cleared; days += cleared;
       level = 1 + Math.floor(lines / 10);
       dropMs = Math.max(80, 800 - (level - 1) * 70);
       showTip(cleared === 4);
-    }
+      Sound.sfx(cleared === 4 ? 'perfect' : 'clear', cleared);
+      if (level > before) setTimeout(() => Sound.sfx('level'), 350);
+    } else if (!dropped) Sound.sfx('lock');
+    const top = grid.findIndex(row => row.some(Boolean));
+    Sound.set(level, top !== -1 && top < 7);
     updateHud();
     if (state === 'play') spawn();
   }
@@ -275,6 +437,7 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
   function updateHud() {
     $('score').textContent = score; $('lines').textContent = lines;
     $('level').textContent = level; $('days').textContent = days;
+    $('mScore').textContent = score; $('mLevel').textContent = level; $('mLines').textContent = lines;
     if (score > best) { best = score; $('best').textContent = best; try { localStorage.setItem('grepcon-tetris-best', best); } catch (e) {} }
   }
 
@@ -328,19 +491,24 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
     bag = newBag(); nextKey = take();
     score = 0; lines = 0; level = 1; days = 0; dropMs = 800; acc = 0;
     state = 'play'; $('overlay').hidden = true;
-    updateHud(); spawn(); last = performance.now(); requestAnimationFrame(loop);
+    updateHud(); Sound.set(1, false); Sound.start();
+    spawn(); last = performance.now(); requestAnimationFrame(loop);
   }
   function pause() {
-    if (state === 'play') { state = 'pause'; overlay('PAUSA', 'Respira. Pausa activa de 10 segundos.', 'CONTINUAR'); }
-    else if (state === 'pause') { state = 'play'; $('overlay').hidden = true; last = performance.now(); requestAnimationFrame(loop); }
+    if (state === 'play') { state = 'pause'; Sound.stop(); overlay('PAUSA', 'Respira. Pausa activa de 10 segundos.', 'CONTINUAR'); }
+    else if (state === 'pause') { state = 'play'; Sound.start(); $('overlay').hidden = true; last = performance.now(); requestAnimationFrame(loop); }
   }
   function gameOver() {
-    state = 'over'; draw();
+    state = 'over'; Sound.stop(); Sound.sfx('over'); draw();
     overlay('FIN DEL TURNO', `Puntos: ${score} · Líneas: ${lines}<br>${days} días sin accidentes. ¡Buen trabajo, equipo GREPCON!`, 'JUGAR OTRA VEZ');
   }
   function overlay(t, p, b) { $('ovTitle').textContent = t; $('ovText').innerHTML = p; $('startBtn').textContent = b; $('overlay').hidden = false; $('startBtn').focus(); }
 
   $('startBtn').addEventListener('click', () => state === 'pause' ? pause() : start());
+  $('pauseBtn').addEventListener('click', () => { pause(); $('pauseBtn').blur(); });
+  $('soundBtn').addEventListener('click', () => { Sound.toggle(); syncSoundBtn(); if (state === 'play') Sound.start(); $('soundBtn').blur(); });
+  syncSoundBtn();
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pause(); });
 
   function act(a) {
     if (state !== 'play') return;
@@ -352,13 +520,22 @@ button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
   const map = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'rot', x: 'rot', X: 'rot', z: 'rotl', Z: 'rotl', ArrowDown: 'down', ' ': 'drop' };
   document.addEventListener('keydown', e => {
     if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') { pause(); e.preventDefault(); return; }
+    if (e.key === 'm' || e.key === 'M') { Sound.toggle(); syncSoundBtn(); if (state === 'play') Sound.start(); return; }
     if (map[e.key] && state === 'play') { act(map[e.key]); e.preventDefault(); }
   });
+  // Hold to repeat: sideways waits a moment before auto-shifting; down repeats almost at once.
   document.querySelectorAll('#touch button').forEach(b => {
-    let rep;
-    const go = e => { e.preventDefault(); act(b.dataset.a); if (b.dataset.a !== 'rot' && b.dataset.a !== 'drop') rep = setInterval(() => act(b.dataset.a), 110); };
-    const stop = () => clearInterval(rep);
-    b.addEventListener('pointerdown', go); b.addEventListener('pointerup', stop); b.addEventListener('pointerleave', stop); b.addEventListener('pointercancel', stop);
+    const a = b.dataset.a, repeats = a === 'left' || a === 'right' || a === 'down';
+    let delay, rep;
+    const stop = () => { clearTimeout(delay); clearInterval(rep); b.classList.remove('on'); };
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault(); stop(); b.classList.add('on');
+      try { b.setPointerCapture(e.pointerId); } catch (err) {}
+      act(a);
+      if (repeats) delay = setTimeout(() => { rep = setInterval(() => act(a), a === 'down' ? 45 : 55); }, a === 'down' ? 90 : 170);
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => b.addEventListener(ev, stop));
+    b.addEventListener('contextmenu', e => e.preventDefault());
   });
 
   // Idle preview: a sample stack so the first frame shows the game.
